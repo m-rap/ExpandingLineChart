@@ -31,6 +31,7 @@ android {
             java {
                 srcDirs 'src/main/java'
                 srcDirs '../../app/src/main/java'
+                exclude 'com/mrap/chart/rn/**'
             }
         }
     }
@@ -43,4 +44,5 @@ dependencies {
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+//    implementation "com.facebook.react:react-native:+"  // From node_modules
 }

@@ -18,8 +18,8 @@ import androidx.annotation.Nullable;
 
 public class ExpandingLineChart extends View {
 
-    private Canvas bmpCanvas = null;
-    private boolean clearBmp = false;
+    protected Canvas bmpCanvas = null;
+    protected boolean clearBmp = false;
 
     public static class PointD {
         double x;
@@ -33,26 +33,26 @@ public class ExpandingLineChart extends View {
 
     private static final String TAG = "ExpandingLineChart";
 
-    float[] toDraw = new float[4000];
-    float[] vtxBuff = new float[1000];
-    int[] toDrawSizes = new int[100];
+    protected float[] toDraw = new float[4000];
+    protected float[] vtxBuff = new float[1000];
+    protected int[] toDrawSizes = new int[100];
 
-    int xAlreadyDrawn = 0;
+    protected int xAlreadyDrawn = 0;
 
-    double yMin = Double.MAX_VALUE;
-    double yMax = Double.MIN_VALUE;
-    double xMin = Double.MAX_VALUE;
-    double xMax = Double.MIN_VALUE;
+    protected double yMin = Double.MAX_VALUE;
+    protected double yMax = Double.MIN_VALUE;
+    protected double xMin = Double.MAX_VALUE;
+    protected double xMax = Double.MIN_VALUE;
 
-    ArrayList<ArrayList<PointD>> datasetList = new ArrayList<>();
-    ArrayList<String> labelList = new ArrayList<>();
+    protected ArrayList<ArrayList<PointD>> datasetList = new ArrayList<>();
+    protected ArrayList<String> legendList = new ArrayList<>();
 
-    ArrayList<Paint> paintList = new ArrayList<>();
+    protected ArrayList<Paint> paintList = new ArrayList<>();
 
-    Bitmap chartBmp = null;
+    protected Bitmap chartBmp = null;
 
-    int drawCountPerFrame = 1;
-    private long interval = 1000 / 5;
+    protected int drawCountPerFrame = 1;
+    protected long interval = 1000 / 5;
 
     public ExpandingLineChart(Context context) {
         this(context, null);
@@ -70,14 +70,14 @@ public class ExpandingLineChart extends View {
         this.drawCountPerFrame = drawCountPerFrame;
     }
 
-    public void setData(ArrayList<String> labels, ArrayList<ArrayList<PointD>> datasets, ArrayList<String> colors) {
+    public void setData(ArrayList<String> legend, ArrayList<ArrayList<PointD>> datasets, ArrayList<String> colors) {
         yMax = Float.MIN_VALUE;
         yMin = Float.MAX_VALUE;
         xMax = Float.MIN_VALUE;
         xMin = Float.MAX_VALUE;
         xAlreadyDrawn = 0;
 
-        labelList = labels;
+        legendList = legend;
         datasetList = datasets;
 
         Comparator<PointD> comparator = new Comparator<PointD>() {
@@ -87,7 +87,7 @@ public class ExpandingLineChart extends View {
             }
         };
 
-        for (int i = 0; i < labels.size(); i++) {
+        for (int i = 0; i < legend.size(); i++) {
             ArrayList<PointD> dataset = datasets.get(i);
             for (int j = 0; j < dataset.size(); j++) {
                 PointD p = dataset.get(j);
@@ -163,7 +163,7 @@ public class ExpandingLineChart extends View {
         }
 
         int maxX = 0;
-        for (int i = 0; i < labelList.size(); i++) {
+        for (int i = 0; i < legendList.size(); i++) {
             toDrawSizes[i] = 0;
 
             int labelSize = datasetList.get(i).size();
@@ -179,7 +179,7 @@ public class ExpandingLineChart extends View {
         }
 
         for (int j = 0; toDrawCount < drawCountPerFrame && j < maxX; j++, xIdx++) {
-            for (int i = 0; i < labelList.size(); i++) {
+            for (int i = 0; i < legendList.size(); i++) {
                 ArrayList<PointD> dataset = datasetList.get(i);
 
                 if (xIdx < dataset.size()) {
@@ -213,7 +213,7 @@ public class ExpandingLineChart extends View {
 //            Log.d(TAG, p);
 //        }
 
-        for (int i = 0; i < labelList.size(); i++) {
+        for (int i = 0; i < legendList.size(); i++) {
             int vtxIdx = 0;
             for (int j = 0; j < toDrawSizes[i] - 1; j++) {
                 int toDrawIdx = i * 200 + j * 2;

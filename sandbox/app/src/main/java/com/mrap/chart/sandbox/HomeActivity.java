@@ -19,11 +19,11 @@ public class HomeActivity extends Activity {
 
         ExpandingLineChart expandingLineChart = findViewById(R.id.expandingLineChart);
 
-        ArrayList<String> labels = new ArrayList<>();
+        ArrayList<String> legend = new ArrayList<>();
         ArrayList<ArrayList<ExpandingLineChart.PointD>> datasets = new ArrayList<>();
         ArrayList<String> colors = new ArrayList<>();
 
-        labels.add("A");
+        legend.add("A");
         ArrayList<ExpandingLineChart.PointD> dataset = new ArrayList<>();
         datasets.add(dataset);
         dataset.add(new ExpandingLineChart.PointD(10, 10));
@@ -33,7 +33,7 @@ public class HomeActivity extends Activity {
         dataset.add(new ExpandingLineChart.PointD(50, 25));
         colors.add("#FF0000");
 
-        labels.add("B");
+        legend.add("B");
         dataset = new ArrayList<>();
         datasets.add(dataset);
         dataset.add(new ExpandingLineChart.PointD(10, 5));
@@ -41,7 +41,7 @@ public class HomeActivity extends Activity {
         dataset.add(new ExpandingLineChart.PointD(60, 20));
         colors.add("#00FF00");
 
-        labels.add("C");
+        legend.add("C");
         dataset = new ArrayList<>();
         datasets.add(dataset);
         dataset.add(new ExpandingLineChart.PointD(15, 5));
@@ -50,6 +50,6 @@ public class HomeActivity extends Activity {
         dataset.add(new ExpandingLineChart.PointD(55, 30));
         colors.add("#0000FF");
 
-        expandingLineChart.setData(labels, datasets, colors);
+        expandingLineChart.setData(legend, datasets, colors);
     }
 }
