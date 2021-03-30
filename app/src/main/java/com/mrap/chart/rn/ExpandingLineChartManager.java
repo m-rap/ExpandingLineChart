@@ -19,7 +19,7 @@ public class ExpandingLineChartManager extends SimpleViewManager<RnExpandingLine
 
   @Override
   public String getName() {
-    return "RnExpandingLineChart";
+    return "ExpandingLineChart";
   }
 
   @Override
@@ -31,5 +31,10 @@ public class ExpandingLineChartManager extends SimpleViewManager<RnExpandingLine
   @ReactProp(name="data")
   public void setData(RnExpandingLineChart v, ReadableMap data) {
     v.setData(data);
+  }
+
+  @ReactProp(name="fps")
+  public void setFps(RnExpandingLineChart v, int fps) {
+    v.setFps(fps);
   }
 }

@@ -41,7 +41,12 @@ public class RnExpandingLineChart extends ExpandingLineChart {
             Log.d(TAG, "data set name " + legendName);
             legend.add(legendName);
 
-            ReadableMap dataSet = data.getMap("datasets").getMap(legendName).getMap("data");
+            ReadableMap datasetContainer = data.getMap("datasets").getMap(legendName);
+
+            String color = datasetContainer.getString("color");
+            colors.add(color);
+
+            ReadableMap dataSet = datasetContainer.getMap("data");
 
             ArrayList<PointD> dataset = new ArrayList<>();
             datasets.add(dataset);

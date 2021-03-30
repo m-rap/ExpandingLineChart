@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Handler;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 
 import java.util.ArrayList;
@@ -52,7 +53,7 @@ public class ExpandingLineChart extends View {
     protected Bitmap chartBmp = null;
 
     protected int drawCountPerFrame = 1;
-    protected long interval = 1000 / 5;
+    protected long interval = 1000 / 12;
 
     public ExpandingLineChart(Context context) {
         this(context, null);
@@ -115,7 +116,10 @@ public class ExpandingLineChart extends View {
             paintList.add(p);
         }
 
-        invalidate();
+        if (!running) {
+            running = true;
+            drawChart(bmpCanvas);
+        }
     }
 
     boolean running = false;
@@ -125,6 +129,12 @@ public class ExpandingLineChart extends View {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 
         xAlreadyDrawn = 0;
+
+        int w = getMeasuredWidth(), h = getMeasuredHeight();
+        Log.d(TAG, "onMeasure w h " + w + " " + h);
+        if (w == 0 || h == 0) {
+            return;
+        }
 
         chartBmp = Bitmap.createBitmap(getMeasuredWidth(), getMeasuredHeight(), Bitmap.Config.ARGB_8888);
         bmpCanvas = new Canvas(chartBmp);
@@ -146,11 +156,13 @@ public class ExpandingLineChart extends View {
     }
 
     private void drawChart(Canvas canvas) {
+        Log.v(TAG, "drawChart clear " + clearBmp + " xAlreadyDrawn " + xAlreadyDrawn);
+
         if (clearBmp) {
             clearBmp = false;
             canvas.drawColor(Color.WHITE);
 
-            new Handler().postDelayed(new Runnable() {
+            new Handler(getContext().getMainLooper()).postDelayed(new Runnable() {
                 @Override
                 public void run() {
                     drawChart(bmpCanvas);
@@ -230,7 +242,7 @@ public class ExpandingLineChart extends View {
 
         xAlreadyDrawn = xIdx;
 
-//        Log.d(TAG, "onDraw end " + xAlreadyDrawn + " " + maxX);
+        Log.v(TAG, "onDraw end " + xAlreadyDrawn + " " + maxX);
 
 
 //        if (xAlreadyDrawn >= maxX) {
@@ -252,7 +264,8 @@ public class ExpandingLineChart extends View {
         invalidate();
 
         if (xAlreadyDrawn < maxX) {
-            new Handler().postDelayed(new Runnable() {
+            Log.v(TAG, "to next drawChart");
+            new Handler(getContext().getMainLooper()).postDelayed(new Runnable() {
                 @Override
                 public void run() {
                     drawChart(bmpCanvas);
