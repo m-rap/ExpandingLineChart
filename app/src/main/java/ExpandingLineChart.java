@@ -1,10 +1,12 @@
 package com.mrap.chart;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -17,6 +19,9 @@ import java.util.Comparator;
 import androidx.annotation.Nullable;
 
 public class ExpandingLineChart extends View {
+
+    private Canvas bmpCanvas = null;
+    private boolean clearBmp = false;
 
     public static class PointD {
         double x;
@@ -51,6 +56,8 @@ public class ExpandingLineChart extends View {
     Paint[] paint = new Paint[] {
             new Paint(), new Paint(), new Paint()
     };
+
+    Bitmap chartBmp = null;
 
     public ExpandingLineChart(Context context) {
         this(context, null);
@@ -110,6 +117,8 @@ public class ExpandingLineChart extends View {
         invalidate();
     }
 
+    boolean running = false;
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -117,6 +126,13 @@ public class ExpandingLineChart extends View {
         Log.d(TAG, "onMeasure");
 
         xAlreadyDrawn = 0;
+
+        chartBmp = Bitmap.createBitmap(getMeasuredWidth(), getMeasuredHeight(), Bitmap.Config.ARGB_8888);
+        bmpCanvas = new Canvas(chartBmp);
+        if (!running) {
+            running = true;
+            drawChart(bmpCanvas);
+        }
         
         //invalidate();
     }
@@ -128,13 +144,35 @@ public class ExpandingLineChart extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         //if (data == null) {
-        if (datasetList.size() == 0) {
+        if (datasetList.size() == 0 || chartBmp == null) {
             super.onDraw(canvas);
             return;
         }
 
-        Log.d(TAG, "onDraw " + xAlreadyDrawn);
-//        ReadableMap datasets = data.getMap("datasets");
+//        Log.d(TAG, "onDraw " + xAlreadyDrawn);
+
+        Rect rect = new Rect(0, 0, chartBmp.getWidth(), chartBmp.getHeight());
+        canvas.drawBitmap(chartBmp, rect, rect, paint[0]);
+    }
+
+    private void drawChart(Canvas canvas) {
+        if (clearBmp) {
+            clearBmp = false;
+            canvas.drawColor(Color.WHITE);
+
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    drawChart(bmpCanvas);
+                }
+            }, 1000);
+
+            invalidate();
+
+            return;
+        }
+
+        //        ReadableMap datasets = data.getMap("datasets");
 //        ReadableArray legend = data.getArray("legend");
         int maxX = 0;
 //        for (int i = 0; i < legend.size(); i++) {
@@ -196,7 +234,10 @@ public class ExpandingLineChart extends View {
                     toDraw2[toDrawIdx + 1] = val;
 
                     toDrawSizes[i]++;
-                    toDrawCount++;
+
+                    if (j > 0) {
+                        toDrawCount++;
+                    }
                 }
             }
 
@@ -267,8 +308,10 @@ public class ExpandingLineChart extends View {
         if (xAlreadyDrawn >= maxX) {
             xAlreadyDrawn = 0;
 
+            clearBmp = true;
+
             if (toDrawCountMax == 100) {
-                toDrawCountMax = 6;
+                toDrawCountMax = 1;
             } else {
                 toDrawCountMax = 100;
             }
@@ -281,8 +324,10 @@ public class ExpandingLineChart extends View {
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                invalidate();
+                drawChart(bmpCanvas);
             }
         }, 1000);
+
+        invalidate();
     }
 }
