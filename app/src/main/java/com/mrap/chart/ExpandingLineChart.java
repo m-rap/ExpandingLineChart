@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.Comparator;
 
 import androidx.annotation.Nullable;
-import android.util.Log;
 
 public class ExpandingLineChart extends View {
 
@@ -52,7 +51,7 @@ public class ExpandingLineChart extends View {
 
     Bitmap chartBmp = null;
 
-    int toDrawCountMax = 1;
+    int drawCountPerFrame = 1;
     private long interval = 1000 / 5;
 
     public ExpandingLineChart(Context context) {
@@ -61,6 +60,14 @@ public class ExpandingLineChart extends View {
 
     public ExpandingLineChart(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
+    }
+
+    public void setFps(int fps) {
+        interval = 1000/fps;
+    }
+
+    public void setDrawCountPerFrame(int drawCountPerFrame) {
+        this.drawCountPerFrame = drawCountPerFrame;
     }
 
     public void setData(ArrayList<String> labels, ArrayList<ArrayList<PointD>> datasets, ArrayList<String> colors) {
@@ -171,7 +178,7 @@ public class ExpandingLineChart extends View {
             xIdx--;
         }
 
-        for (int j = 0; toDrawCount < toDrawCountMax && j < maxX; j++, xIdx++) {
+        for (int j = 0; toDrawCount < drawCountPerFrame && j < maxX; j++, xIdx++) {
             for (int i = 0; i < labelList.size(); i++) {
                 ArrayList<PointD> dataset = datasetList.get(i);
 
