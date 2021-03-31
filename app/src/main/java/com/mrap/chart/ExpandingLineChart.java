@@ -116,6 +116,7 @@ public class ExpandingLineChart extends View {
             paintList.add(p);
         }
 
+        clearBmp = true;
         if (!running) {
             running = true;
             drawChart(bmpCanvas);
@@ -156,7 +157,18 @@ public class ExpandingLineChart extends View {
     }
 
     private void drawChart(Canvas canvas) {
-        Log.v(TAG, "drawChart clear " + clearBmp + " xAlreadyDrawn " + xAlreadyDrawn);
+        Log.v(TAG, "drawChart clear " + clearBmp + " xAlreadyDrawn " + xAlreadyDrawn + " canvas " + ((canvas != null) ? "1" : "null"));
+
+        if (canvas == null) {
+            new Handler(getContext().getMainLooper()).postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    drawChart(bmpCanvas);
+                }
+            }, interval);
+
+            return;
+        }
 
         if (clearBmp) {
             clearBmp = false;
