@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.os.Handler;
 import android.util.AttributeSet;
@@ -49,11 +50,25 @@ public class ExpandingLineChart extends View {
     protected ArrayList<String> legendList = new ArrayList<>();
 
     protected ArrayList<Paint> paintList = new ArrayList<>();
+    protected Paint yAxisTextPaint;
+    protected Paint xAxisTextPaint;
+    protected Paint gridPaint;
+    protected Paint axisPaint;
 
     protected Bitmap chartBmp = null;
 
     protected int drawCountPerFrame = 1;
     protected long interval = 1000 / 12;
+
+    protected int padding;
+    protected int axisTextPadding;
+    protected final int chartBmpX;
+    protected final int chartBmpY;
+    protected double ticksInterval = 10;
+    protected int ticksCountMax = 10;
+    protected double appliedTicksInterval = 10;
+    protected double ticksValueMin = 0;
+    protected double ticksValueMax = 0;
 
     public ExpandingLineChart(Context context) {
         this(context, null);
@@ -61,6 +76,29 @@ public class ExpandingLineChart extends View {
 
     public ExpandingLineChart(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
+
+        float scaledDensity = context.getResources().getDisplayMetrics().scaledDensity;
+        float density = context.getResources().getDisplayMetrics().density;
+
+        yAxisTextPaint = new Paint();
+        yAxisTextPaint.setTextAlign(Paint.Align.RIGHT);
+        yAxisTextPaint.setTextSize(12 * scaledDensity);
+
+        xAxisTextPaint = new Paint();
+        xAxisTextPaint.setTextAlign(Paint.Align.CENTER);
+        xAxisTextPaint.setTextSize(12 * scaledDensity);
+
+        gridPaint = new Paint();
+        gridPaint.setColor(Color.GRAY);
+
+        axisPaint = new Paint();
+        axisPaint.setStrokeWidth((int)(3 * density));
+
+        padding = (int)(3 * density);
+        axisTextPadding = padding;
+
+        chartBmpX = (int)(50 * density);
+        chartBmpY = padding;
     }
 
     public void setFps(int fps) {
@@ -107,14 +145,34 @@ public class ExpandingLineChart extends View {
             }
             Collections.sort(dataset, comparator);
         }
+        float density = getContext().getResources().getDisplayMetrics().density;
 
         paintList.clear();
         for (String colStr : colors) {
             Paint p = new Paint();
-            p.setStrokeWidth(8);
+            p.setStrokeWidth(2 * density);
             p.setColor(Color.parseColor(colStr));
+            p.setAntiAlias(true);
             paintList.add(p);
         }
+
+        int ticksCount;
+        appliedTicksInterval = ticksInterval;
+        for (int i = 1; true; i++) {
+            appliedTicksInterval = i * ticksInterval;
+            if (yMin >= 0) {
+                ticksValueMin = yMin - (yMin % appliedTicksInterval);
+            } else {
+                ticksValueMin = yMin + (yMin % appliedTicksInterval);
+            }
+            ticksValueMax = Math.floor(yMax / appliedTicksInterval) * appliedTicksInterval;
+            ticksCount = (int)((ticksValueMax - ticksValueMin) / appliedTicksInterval);
+            if (ticksCount <= ticksCountMax) {
+                break;
+            }
+        }
+
+        Log.v(TAG, "ticks " + ticksValueMin + " " + ticksValueMax + " " + appliedTicksInterval + " " + ticksCount);
 
         clearBmp = true;
         if (!running) {
@@ -129,15 +187,26 @@ public class ExpandingLineChart extends View {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 
+        onResize(getMeasuredWidth(), getMeasuredHeight());
+    }
+
+    private void onResize(int width, int height) {
         xAlreadyDrawn = 0;
 
-        int w = getMeasuredWidth(), h = getMeasuredHeight();
-        Log.d(TAG, "onMeasure w h " + w + " " + h);
+//        int w = getMeasuredWidth(), h = getMeasuredHeight();
+        int w = width, h = height;
+//        Log.d(TAG, "onMeasure w h " + w + " " + h);
         if (w == 0 || h == 0) {
             return;
         }
 
-        chartBmp = Bitmap.createBitmap(getMeasuredWidth(), getMeasuredHeight(), Bitmap.Config.ARGB_8888);
+        float density = getContext().getResources().getDisplayMetrics().density;
+
+        int bottom = (int)yAxisTextPaint.getTextSize() + padding;
+        int top = padding;
+        int left = (int)(50 * density);
+        int right = padding + (int)(xAxisTextPaint.measureText(xMax + "") / 2);
+        chartBmp = Bitmap.createBitmap(w - left - right, h - top - bottom, Bitmap.Config.ARGB_8888);
         bmpCanvas = new Canvas(chartBmp);
         if (!running) {
             running = true;
@@ -152,8 +221,27 @@ public class ExpandingLineChart extends View {
             return;
         }
 
-        Rect rect = new Rect(0, 0, chartBmp.getWidth(), chartBmp.getHeight());
-        canvas.drawBitmap(chartBmp, rect, rect, paintList.get(0));
+        float scaledDensity = getContext().getResources().getDisplayMetrics().scaledDensity;
+        float density = getContext().getResources().getDisplayMetrics().density;
+
+        for (double currTicks = ticksValueMin; currTicks <= ticksValueMax; currTicks += appliedTicksInterval) {
+            double y = chartBmpY + (chartBmp.getHeight() - ((currTicks - ticksValueMin) * chartBmp.getHeight() / (ticksValueMax - ticksValueMin)));
+            //Log.v(TAG, "currTicks " + currTicks + " " + ticksValueMax + " " + y);
+            canvas.drawLine(chartBmpX, (float)y, chartBmpX + chartBmp.getWidth(), (float)y, gridPaint);
+            canvas.drawText(String.format("%.0f", currTicks), chartBmpX - axisTextPadding, (float)y + (yAxisTextPaint.getTextSize() / 2), yAxisTextPaint);
+        }
+
+        Rect rect = new Rect(chartBmpX, chartBmpY, chartBmpX + chartBmp.getWidth(), chartBmpY + chartBmp.getHeight());
+        canvas.drawBitmap(chartBmp, null, rect, paintList.get(0));
+
+        canvas.drawLine(chartBmpX, chartBmpY, chartBmpX, chartBmpY + chartBmp.getHeight() + (axisPaint.getStrokeWidth() / 2), axisPaint);
+        canvas.drawLine(chartBmpX, chartBmpY + chartBmp.getHeight(), chartBmpX + chartBmp.getWidth(), chartBmpY + chartBmp.getHeight(), axisPaint);
+
+//        canvas.drawText(ticksValueMax + "", chartBmpX - axisTextPadding, chartBmpY + (yAxisTextPaint.getTextSize() / 2), yAxisTextPaint);
+//        canvas.drawText(ticksValueMin + "", chartBmpX - axisTextPadding, chartBmpY + (yAxisTextPaint.getTextSize() / 2) + chartBmp.getHeight(), yAxisTextPaint);
+
+        canvas.drawText(xMin + "", chartBmpX, chartBmpY + padding + xAxisTextPaint.getTextSize() + chartBmp.getHeight(), xAxisTextPaint);
+        canvas.drawText(xMax + "", chartBmpX + chartBmp.getWidth(), chartBmpY + padding + xAxisTextPaint.getTextSize() + chartBmp.getHeight(), xAxisTextPaint);
     }
 
     private void drawChart(Canvas canvas) {
@@ -172,14 +260,16 @@ public class ExpandingLineChart extends View {
 
         if (clearBmp) {
             clearBmp = false;
-            canvas.drawColor(Color.WHITE);
+//            canvas.drawColor(Color.WHITE);
+//            canvas.drawColor(Color.parseColor("#00ffffff"));
+            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
 
             new Handler(getContext().getMainLooper()).postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    drawChart(bmpCanvas);
-                }
-            }, interval);
+                    @Override
+                    public void run() {
+                        drawChart(bmpCanvas);
+                    }
+                }, interval);
 
             invalidate();
 
@@ -212,7 +302,8 @@ public class ExpandingLineChart extends View {
 
                     float scaledX = (float) ((datetime - xMin) * canvas.getWidth() / (xMax - xMin));
 //                    float scaledY = (float) ((val - yMin) * canvas.getHeight() / (yMax - yMin));
-                    float scaledY = (float) (canvas.getHeight() - ((val - yMin) * canvas.getHeight() / (yMax - yMin)));
+//                    float scaledY = (float) (canvas.getHeight() - ((val - yMin) * canvas.getHeight() / (yMax - yMin)));
+                    float scaledY = (float) (canvas.getHeight() - ((val - ticksValueMin) * canvas.getHeight() / (ticksValueMax - ticksValueMin)));
 
                     int toDrawIdx = i * 200 + j * 2;
 
