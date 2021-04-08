@@ -28,7 +28,7 @@ public class HomeActivity extends Activity {
         datasets.add(dataset);
         dataset.add(new ExpandingLineChart.PointD(10, 10));
         dataset.add(new ExpandingLineChart.PointD(20, 15));
-        dataset.add(new ExpandingLineChart.PointD(30, 10));
+        dataset.add(new ExpandingLineChart.PointD(30, 12345));
         dataset.add(new ExpandingLineChart.PointD(40, 20));
         dataset.add(new ExpandingLineChart.PointD(50, 25));
         colors.add("#FF0000");
@@ -46,10 +46,26 @@ public class HomeActivity extends Activity {
         datasets.add(dataset);
         dataset.add(new ExpandingLineChart.PointD(15, 5));
         dataset.add(new ExpandingLineChart.PointD(20, 20));
-        dataset.add(new ExpandingLineChart.PointD(30, 15));
+        dataset.add(new ExpandingLineChart.PointD(30, 8878));
         dataset.add(new ExpandingLineChart.PointD(55, 30));
         colors.add("#0000FF");
 
-        expandingLineChart.setData(legend, datasets, colors);
+        ExpandingLineChart.Ticks xTicks = new ExpandingLineChart.Ticks();
+        xTicks.enabled = false;
+
+//        expandingLineChart.setXTicks(xTicks);
+//        expandingLineChart.setYValueLabelEnabled(false);
+//        expandingLineChart.setXValueLabelEnabled(true);
+//        expandingLineChart.setData(legend, datasets, colors);
+
+        ExpandingLineChart.Params params = new ExpandingLineChart.Params();
+        params.xTicks = xTicks;
+        params.yValueLabelEnabled = false;
+        params.xValueLabelEnabled = true;
+        params.legend = legend;
+        params.datasets = datasets;
+        params.colors = colors;
+
+        expandingLineChart.setParams(params);
     }
 }

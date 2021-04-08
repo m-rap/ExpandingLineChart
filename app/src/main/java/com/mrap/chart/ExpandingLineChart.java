@@ -20,6 +20,22 @@ import androidx.annotation.Nullable;
 
 public class ExpandingLineChart extends View {
 
+    public static class Params {
+        public Ticks xTicks = null;
+        public Ticks yTicks = null;
+        public boolean xValueLabelEnabled = true;
+        public boolean yValueLabelEnabled = false;
+        public ArrayList<String> legend = null;
+        public ArrayList<ArrayList<PointD>> datasets = null;
+        public ArrayList<String> colors = null;
+        public int fps = 12;
+        public int drawCountPerFrame = 1;
+    }
+
+    public interface LabelFormatterCallback {
+        public String onLabelFormat(double value);
+    }
+
     protected Canvas bmpCanvas = null;
     protected boolean clearBmp = false;
 
@@ -64,11 +80,24 @@ public class ExpandingLineChart extends View {
     protected int axisTextPadding;
     protected final int chartBmpX;
     protected final int chartBmpY;
-    protected double ticksInterval = 10;
-    protected int ticksCountMax = 10;
-    protected double appliedTicksInterval = 10;
-    protected double ticksValueMin = 0;
-    protected double ticksValueMax = 0;
+
+    public static class Ticks {
+        public boolean enabled = true;
+        public double interval = 10;
+        public int countMax = 10;
+        public double appliedInterval = 10;
+        public double valueMin = 0;
+        public double valueMax = 0;
+    }
+
+    protected Ticks yTicks = new Ticks();
+    protected Ticks xTicks = new Ticks();
+
+    protected boolean yValueLabelEnabled = false;
+    protected boolean xValueLabelEnabled = true;
+
+    protected LabelFormatterCallback xLabelFormatterCallback = null;
+    protected LabelFormatterCallback yLabelFormatterCallback = null;
 
     public ExpandingLineChart(Context context) {
         this(context, null);
@@ -101,6 +130,35 @@ public class ExpandingLineChart extends View {
         chartBmpY = padding;
     }
 
+    public void setParams(Params params) {
+        interval = 1000/params.fps;
+        this.drawCountPerFrame = params.drawCountPerFrame;
+
+        if (params.legend != null) {
+            setDataIntern(params.legend, params.datasets, params.colors);
+        }
+
+        if (params.xTicks != null) {
+            setXTicksIntern(params.xTicks);
+        }
+
+        if (params.yTicks != null) {
+            setYTicksIntern(params.yTicks);
+        }
+
+        xValueLabelEnabled = params.xValueLabelEnabled;
+        yValueLabelEnabled = params.yValueLabelEnabled;
+
+        postInvalidate();
+
+        xAlreadyDrawn = 0;
+        clearBmp = true;
+        if (!running) {
+            running = true;
+            drawChart(bmpCanvas);
+        }
+    }
+
     public void setFps(int fps) {
         interval = 1000/fps;
     }
@@ -110,11 +168,23 @@ public class ExpandingLineChart extends View {
     }
 
     public void setData(ArrayList<String> legend, ArrayList<ArrayList<PointD>> datasets, ArrayList<String> colors) {
+        setDataIntern(legend, datasets, colors);
+
+        postInvalidate();
+
+        xAlreadyDrawn = 0;
+        clearBmp = true;
+        if (!running) {
+            running = true;
+            drawChart(bmpCanvas);
+        }
+    }
+
+    private void setDataIntern(ArrayList<String> legend, ArrayList<ArrayList<PointD>> datasets, ArrayList<String> colors) {
         yMax = Float.MIN_VALUE;
         yMin = Float.MAX_VALUE;
         xMax = Float.MIN_VALUE;
         xMin = Float.MAX_VALUE;
-        xAlreadyDrawn = 0;
 
         legendList = legend;
         datasetList = datasets;
@@ -156,29 +226,72 @@ public class ExpandingLineChart extends View {
             paintList.add(p);
         }
 
+        calcTicks(yTicks, yMin, yMax);
+        calcTicks(xTicks, xMin, xMax);
+    }
+
+    public void setXTicks(Ticks xTicks) {
+        setXTicksIntern(xTicks);
+
+        postInvalidate();
+    }
+
+    private void setXTicksIntern(Ticks xTicks) {
+        this.xTicks = xTicks;
+
+        calcTicks(xTicks, xMin, xMax);
+    }
+
+    public void setYTicks(Ticks yTicks) {
+        setYTicksIntern(yTicks);
+
+        postInvalidate();
+    }
+
+    private void setYTicksIntern(Ticks yTicks) {
+        this.yTicks = yTicks;
+
+        calcTicks(yTicks, yMin, yMax);
+    }
+
+    public void setXValueLabelEnabled(boolean v) {
+        xValueLabelEnabled = v;
+        postInvalidate();
+    }
+
+    public void setYValueLabelEnabled(boolean v) {
+        yValueLabelEnabled = v;
+        postInvalidate();
+    }
+
+    private void calcTicks(Ticks ticks, double min, double max) {
         int ticksCount;
-        appliedTicksInterval = ticksInterval;
-        for (int i = 1; true; i++) {
-            appliedTicksInterval = i * ticksInterval;
-            if (yMin >= 0) {
-                ticksValueMin = yMin - (yMin % appliedTicksInterval);
-            } else {
-                ticksValueMin = yMin + (yMin % appliedTicksInterval);
-            }
-            ticksValueMax = Math.floor(yMax / appliedTicksInterval) * appliedTicksInterval;
-            ticksCount = (int)((ticksValueMax - ticksValueMin) / appliedTicksInterval);
-            if (ticksCount <= ticksCountMax) {
+        ticks.appliedInterval = ticks.interval;
+        if (min >= 0) {
+            ticks.valueMin = min - (min % ticks.appliedInterval);
+        } else {
+            ticks.valueMin = min + (min % ticks.appliedInterval);
+        }
+        ticks.valueMax = Math.floor(max / ticks.appliedInterval) * ticks.appliedInterval;
+        if (ticks.valueMax < max) {
+            ticks.valueMax += ticks.appliedInterval;
+        }
+        double range = ticks.valueMax - ticks.valueMin;
+        while (true) {
+            ticksCount = (int)(range / ticks.appliedInterval);
+            if (ticksCount <= ticks.countMax) {
                 break;
+            } else {
+                double div = range / ticks.countMax;
+                ticks.appliedInterval = Math.floor(div / ticks.interval) * ticks.interval;
+                ticks.valueMax = Math.floor(max / ticks.appliedInterval) * ticks.appliedInterval;
+                if (ticks.valueMax < max) {
+                    ticks.valueMax += ticks.appliedInterval;
+                }
             }
         }
 
-        Log.v(TAG, "ticks " + ticksValueMin + " " + ticksValueMax + " " + appliedTicksInterval + " " + ticksCount);
-
-        clearBmp = true;
-        if (!running) {
-            running = true;
-            drawChart(bmpCanvas);
-        }
+        Log.v(TAG, "ticks " + ticks.valueMin + " " + ticks.valueMax + " " + ticks.appliedInterval + " " + ticksCount);
     }
 
     boolean running = false;
@@ -224,11 +337,41 @@ public class ExpandingLineChart extends View {
         float scaledDensity = getContext().getResources().getDisplayMetrics().scaledDensity;
         float density = getContext().getResources().getDisplayMetrics().density;
 
-        for (double currTicks = ticksValueMin; currTicks <= ticksValueMax; currTicks += appliedTicksInterval) {
-            double y = chartBmpY + (chartBmp.getHeight() - ((currTicks - ticksValueMin) * chartBmp.getHeight() / (ticksValueMax - ticksValueMin)));
-            //Log.v(TAG, "currTicks " + currTicks + " " + ticksValueMax + " " + y);
-            canvas.drawLine(chartBmpX, (float)y, chartBmpX + chartBmp.getWidth(), (float)y, gridPaint);
-            canvas.drawText(String.format("%.0f", currTicks), chartBmpX - axisTextPadding, (float)y + (yAxisTextPaint.getTextSize() / 2), yAxisTextPaint);
+        if (yTicks.enabled) {
+            for (double currTicks = yTicks.valueMin; currTicks <= yTicks.valueMax; currTicks += yTicks.appliedInterval) {
+                double y = chartBmpY + (chartBmp.getHeight() - ((currTicks - yTicks.valueMin) * chartBmp.getHeight() / (yTicks.valueMax - yTicks.valueMin)));
+                //Log.v(TAG, "currTicks " + currTicks + " " + ticksValueMax + " " + y);
+                canvas.drawLine(chartBmpX, (float) y, chartBmpX + chartBmp.getWidth(), (float) y, gridPaint);
+                canvas.drawText(String.format("%.0f", currTicks), chartBmpX - axisTextPadding, (float) y + (yAxisTextPaint.getTextSize() / 2), yAxisTextPaint);
+            }
+        }
+
+        if (xTicks.enabled) {
+            for (double currTicks = xTicks.valueMin; currTicks <= xTicks.valueMax; currTicks += xTicks.appliedInterval) {
+                double x = chartBmpX + ((currTicks - xTicks.valueMin) * chartBmp.getWidth() / (xTicks.valueMax - xTicks.valueMin));
+                float y = chartBmpY + chartBmp.getHeight();
+                //Log.v(TAG, "currTicks " + currTicks + " " + ticksValueMax + " " + y);
+                canvas.drawLine((float)x, chartBmpY, (float)x, y, gridPaint);
+                canvas.drawText(String.format("%.0f", currTicks), (float)x, y + xAxisTextPaint.getTextSize() + axisTextPadding, xAxisTextPaint);
+            }
+        }
+
+        for (int i = 0; i < datasetList.size(); i++) {
+            ArrayList<PointD> dataset = datasetList.get(i);
+            for (int j = 0; j < dataset.size(); j++) {
+                if (yValueLabelEnabled) {
+                    double val = dataset.get(j).y;
+                    double y = chartBmpY + (chartBmp.getHeight() - ((val - yTicks.valueMin) * chartBmp.getHeight() / (yTicks.valueMax - yTicks.valueMin)));
+                    canvas.drawText(String.format("%.0f", val),
+                            chartBmpX - axisTextPadding, (float) y + (yAxisTextPaint.getTextSize() / 2), yAxisTextPaint);
+                }
+                if (xValueLabelEnabled) {
+                    double val = dataset.get(j).x;
+                    double x = chartBmpX + ((val - xTicks.valueMin) * chartBmp.getWidth() / (xTicks.valueMax - xTicks.valueMin));
+                    float y = chartBmpY + chartBmp.getHeight();
+                    canvas.drawText(String.format("%.0f", val), (float)x, y + xAxisTextPaint.getTextSize() + axisTextPadding, xAxisTextPaint);
+                }
+            }
         }
 
         Rect rect = new Rect(chartBmpX, chartBmpY, chartBmpX + chartBmp.getWidth(), chartBmpY + chartBmp.getHeight());
@@ -240,8 +383,8 @@ public class ExpandingLineChart extends View {
 //        canvas.drawText(ticksValueMax + "", chartBmpX - axisTextPadding, chartBmpY + (yAxisTextPaint.getTextSize() / 2), yAxisTextPaint);
 //        canvas.drawText(ticksValueMin + "", chartBmpX - axisTextPadding, chartBmpY + (yAxisTextPaint.getTextSize() / 2) + chartBmp.getHeight(), yAxisTextPaint);
 
-        canvas.drawText(xMin + "", chartBmpX, chartBmpY + padding + xAxisTextPaint.getTextSize() + chartBmp.getHeight(), xAxisTextPaint);
-        canvas.drawText(xMax + "", chartBmpX + chartBmp.getWidth(), chartBmpY + padding + xAxisTextPaint.getTextSize() + chartBmp.getHeight(), xAxisTextPaint);
+//        canvas.drawText(xMin + "", chartBmpX, chartBmpY + padding + xAxisTextPaint.getTextSize() + chartBmp.getHeight(), xAxisTextPaint);
+//        canvas.drawText(xMax + "", chartBmpX + chartBmp.getWidth(), chartBmpY + padding + xAxisTextPaint.getTextSize() + chartBmp.getHeight(), xAxisTextPaint);
     }
 
     private void drawChart(Canvas canvas) {
@@ -303,7 +446,7 @@ public class ExpandingLineChart extends View {
                     float scaledX = (float) ((datetime - xMin) * canvas.getWidth() / (xMax - xMin));
 //                    float scaledY = (float) ((val - yMin) * canvas.getHeight() / (yMax - yMin));
 //                    float scaledY = (float) (canvas.getHeight() - ((val - yMin) * canvas.getHeight() / (yMax - yMin)));
-                    float scaledY = (float) (canvas.getHeight() - ((val - ticksValueMin) * canvas.getHeight() / (ticksValueMax - ticksValueMin)));
+                    float scaledY = (float) (canvas.getHeight() - ((val - yTicks.valueMin) * canvas.getHeight() / (yTicks.valueMax - yTicks.valueMin)));
 
                     int toDrawIdx = i * 200 + j * 2;
 
