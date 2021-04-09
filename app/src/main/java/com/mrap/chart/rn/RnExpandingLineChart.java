@@ -1,15 +1,11 @@
 package com.mrap.chart.rn;
 
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 
 import com.facebook.react.bridge.Arguments;
-import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
@@ -17,10 +13,8 @@ import com.facebook.react.bridge.ReadableMapKeySetIterator;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.uimanager.events.RCTEventEmitter;
 import com.mrap.chart.ExpandingLineChart;
-import com.mrap.savingstrackermobile_v1.R;
 
 import java.util.ArrayList;
-import java.util.Collections;
 
 import androidx.annotation.Nullable;
 
@@ -32,10 +26,16 @@ public class RnExpandingLineChart extends ExpandingLineChart {
 
         ReactContext reactContext;
         View view;
+        String eventName;
 
-        public RnLabelFormatter(ReactContext context, View view) {
+        public RnLabelFormatter(ReactContext context, View view, String axis) {
             reactContext = context;
             this.view = view;
+            if (axis.toLowerCase().equals("x")) {
+                eventName = "topFormatXLabel";
+            } else if (axis.toLowerCase().equals("y")) {
+                eventName = "topFormatYLabel";
+            }
         }
 
         @Override
@@ -43,20 +43,22 @@ public class RnExpandingLineChart extends ExpandingLineChart {
             WritableMap args = Arguments.createMap();
             args.putDouble("value", value);
             args.putString("result", "");
+//            Log.d(TAG, "event onLabelFormat " + eventName + " " + value);
             reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(view.getId(),
-                    "formatXLabel", args);
+                    eventName, args);
+            Log.d(TAG, "event onLabelFormat " + eventName + " value " + value + " result " + args.getString("result"));
             return args.getString("result");
         }
     }
 
     public RnExpandingLineChart(Context context) {
-        super(context);
+        this(context, null);
     }
 
     public RnExpandingLineChart(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
-        xLabelFormatterCallback = new RnLabelFormatter((ReactContext)context, this);
-        yLabelFormatterCallback = new RnLabelFormatter((ReactContext)context, this);
+        xLabelFormatterCallback = new RnLabelFormatter((ReactContext)context, this, "x");
+        yLabelFormatterCallback = new RnLabelFormatter((ReactContext)context, this, "y");
     }
 
     void setData(ReadableMap data) {
@@ -96,6 +98,60 @@ public class RnExpandingLineChart extends ExpandingLineChart {
             }
         }
 
-        setData(legend, datasets, colors);
+        Params params = new Params();
+
+        params.legend = legend;
+        params.datasets = datasets;
+        params.colors = colors;
+
+        if (data.hasKey("xTicks")) {
+            parseTicks(data, params, "xTicks");
+        }
+        if (data.hasKey("yTicks")) {
+            parseTicks(data, params, "yTicks");
+        }
+
+        if (data.hasKey("xValueLabelEnabled")) {
+            params.xValueLabelEnabled = data.getBoolean("xValueLabelEnabled");
+        }
+        if (data.hasKey("yValueLabelEnabled")) {
+            params.yValueLabelEnabled = data.getBoolean("yValueLabelEnabled");
+        }
+        if (data.hasKey("fps")) {
+            params.fps = data.getInt("fps");
+        }
+        if (data.hasKey("drawCountPerFrame")) {
+            params.drawCountPerFrame = data.getInt("drawCountPerFrame");
+        }
+
+//        setData(legend, datasets, colors);
+        setParams(params);
+    }
+
+    private void parseTicks(ReadableMap data, Params params, String key) {
+        ReadableMap xTicksRn = data.getMap(key);
+        Ticks ticks = new Ticks();
+        if (xTicksRn.hasKey("enabled")) {
+            ticks.enabled = xTicksRn.getBoolean("enabled");
+        }
+        if (xTicksRn.hasKey("interval")) {
+            ticks.interval = xTicksRn.getDouble("interval");
+        }
+        if (xTicksRn.hasKey("countMax")) {
+            ticks.countMax = xTicksRn.getInt("countMax");
+        }
+        if (xTicksRn.hasKey("valueMin")) {
+            ticks.overrideValueMin = true;
+            ticks.valueMin = xTicksRn.getDouble("valueMin");
+        }
+        if (xTicksRn.hasKey("valueMax")) {
+            ticks.overrideValueMax = true;
+            ticks.valueMax = xTicksRn.getDouble("valueMax");
+        }
+        if (key.equals("xTicks")) {
+            params.xTicks = ticks;
+        } else if (key.equals("yTicks")) {
+            params.yTicks = ticks;
+        }
     }
 }

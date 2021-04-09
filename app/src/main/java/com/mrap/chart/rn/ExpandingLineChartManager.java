@@ -4,9 +4,12 @@ import android.util.Log;
 
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.common.MapBuilder;
 import com.facebook.react.uimanager.SimpleViewManager;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.annotations.ReactProp;
+
+import java.util.Map;
 
 public class ExpandingLineChartManager extends SimpleViewManager<RnExpandingLineChart> {
   private static final String TAG = "ExpLineChrtMgr";
@@ -33,8 +36,36 @@ public class ExpandingLineChartManager extends SimpleViewManager<RnExpandingLine
     v.setData(data);
   }
 
-  @ReactProp(name="fps")
-  public void setFps(RnExpandingLineChart v, int fps) {
-    v.setFps(fps);
+//  @ReactProp(name="fps")
+//  public void setFps(RnExpandingLineChart v, int fps) {
+//    v.setFps(fps);
+//  }
+
+
+//  @Override
+//  public Map getExportedCustomBubblingEventTypeConstants() {
+//    return MapBuilder.builder()
+//            .put(
+//                    "topFormatXLabel",
+//                    MapBuilder.of(
+//                            "phasedRegistrationNames",
+//                            MapBuilder.of("bubbled", "onFormatXLabel")))
+//            .put(
+//                    "topFormatYLabel",
+//                    MapBuilder.of(
+//                            "phasedRegistrationNames",
+//                            MapBuilder.of("bubbled", "onFormatYLabel")))
+//            .build();
+//  }
+
+  @Override
+  public Map getExportedCustomDirectEventTypeConstants() {
+    return MapBuilder.of(
+            "topFormatXLabel",
+            MapBuilder.of(
+                    "registrationName", "onFormatXLabel"),
+            "topFormatYLabel",
+            MapBuilder.of(
+                    "registrationName", "onFormatYLabel"));
   }
 }

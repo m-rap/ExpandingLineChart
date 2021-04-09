@@ -85,7 +85,9 @@ public class ExpandingLineChart extends View {
         public boolean enabled = true;
         public double interval = 10;
         public int countMax = 10;
-        public double appliedInterval = 10;
+        private double appliedInterval = 10;
+        public boolean overrideValueMin = false;
+        public boolean overrideValueMax = false;
         public double valueMin = 0;
         public double valueMax = 0;
     }
@@ -267,14 +269,18 @@ public class ExpandingLineChart extends View {
     private void calcTicks(Ticks ticks, double min, double max) {
         int ticksCount;
         ticks.appliedInterval = ticks.interval;
-        if (min >= 0) {
-            ticks.valueMin = min - (min % ticks.appliedInterval);
-        } else {
-            ticks.valueMin = min + (min % ticks.appliedInterval);
+        if (!ticks.overrideValueMin) {
+            if (min >= 0) {
+                ticks.valueMin = min - (min % ticks.appliedInterval);
+            } else {
+                ticks.valueMin = min + (min % ticks.appliedInterval);
+            }
         }
-        ticks.valueMax = Math.floor(max / ticks.appliedInterval) * ticks.appliedInterval;
-        if (ticks.valueMax < max) {
-            ticks.valueMax += ticks.appliedInterval;
+        if (!ticks.overrideValueMax) {
+            ticks.valueMax = Math.floor(max / ticks.appliedInterval) * ticks.appliedInterval;
+            if (ticks.valueMax < max) {
+                ticks.valueMax += ticks.appliedInterval;
+            }
         }
         double range = ticks.valueMax - ticks.valueMin;
         while (true) {
@@ -342,7 +348,8 @@ public class ExpandingLineChart extends View {
                 double y = chartBmpY + (chartBmp.getHeight() - ((currTicks - yTicks.valueMin) * chartBmp.getHeight() / (yTicks.valueMax - yTicks.valueMin)));
                 //Log.v(TAG, "currTicks " + currTicks + " " + ticksValueMax + " " + y);
                 canvas.drawLine(chartBmpX, (float) y, chartBmpX + chartBmp.getWidth(), (float) y, gridPaint);
-                canvas.drawText(String.format("%.0f", currTicks), chartBmpX - axisTextPadding, (float) y + (yAxisTextPaint.getTextSize() / 2), yAxisTextPaint);
+                String ticksText = formatLabel(currTicks, yLabelFormatterCallback);
+                canvas.drawText(ticksText, chartBmpX - axisTextPadding, (float) y + (yAxisTextPaint.getTextSize() / 2), yAxisTextPaint);
             }
         }
 
@@ -352,7 +359,8 @@ public class ExpandingLineChart extends View {
                 float y = chartBmpY + chartBmp.getHeight();
                 //Log.v(TAG, "currTicks " + currTicks + " " + ticksValueMax + " " + y);
                 canvas.drawLine((float)x, chartBmpY, (float)x, y, gridPaint);
-                canvas.drawText(String.format("%.0f", currTicks), (float)x, y + xAxisTextPaint.getTextSize() + axisTextPadding, xAxisTextPaint);
+                String ticksText = formatLabel(currTicks, xLabelFormatterCallback);
+                canvas.drawText(ticksText, (float)x, y + xAxisTextPaint.getTextSize() + axisTextPadding, xAxisTextPaint);
             }
         }
 
@@ -362,14 +370,16 @@ public class ExpandingLineChart extends View {
                 if (yValueLabelEnabled) {
                     double val = dataset.get(j).y;
                     double y = chartBmpY + (chartBmp.getHeight() - ((val - yTicks.valueMin) * chartBmp.getHeight() / (yTicks.valueMax - yTicks.valueMin)));
-                    canvas.drawText(String.format("%.0f", val),
+                    String ticksText = formatLabel(val, yLabelFormatterCallback);
+                    canvas.drawText(ticksText,
                             chartBmpX - axisTextPadding, (float) y + (yAxisTextPaint.getTextSize() / 2), yAxisTextPaint);
                 }
                 if (xValueLabelEnabled) {
                     double val = dataset.get(j).x;
                     double x = chartBmpX + ((val - xTicks.valueMin) * chartBmp.getWidth() / (xTicks.valueMax - xTicks.valueMin));
                     float y = chartBmpY + chartBmp.getHeight();
-                    canvas.drawText(String.format("%.0f", val), (float)x, y + xAxisTextPaint.getTextSize() + axisTextPadding, xAxisTextPaint);
+                    String ticksText = formatLabel(val, xLabelFormatterCallback);
+                    canvas.drawText(ticksText, (float)x, y + xAxisTextPaint.getTextSize() + axisTextPadding, xAxisTextPaint);
                 }
             }
         }
@@ -385,6 +395,20 @@ public class ExpandingLineChart extends View {
 
 //        canvas.drawText(xMin + "", chartBmpX, chartBmpY + padding + xAxisTextPaint.getTextSize() + chartBmp.getHeight(), xAxisTextPaint);
 //        canvas.drawText(xMax + "", chartBmpX + chartBmp.getWidth(), chartBmpY + padding + xAxisTextPaint.getTextSize() + chartBmp.getHeight(), xAxisTextPaint);
+    }
+
+    private String formatLabel(double val, LabelFormatterCallback labelFormatterCallback) {
+        Log.d(TAG, "formatLabel labelFormatterCallback " + (labelFormatterCallback == null ? "null" : "1"));
+        String ticksText;
+        if (labelFormatterCallback != null) {
+            ticksText = labelFormatterCallback.onLabelFormat(val);
+            if (ticksText == null) {
+                ticksText = String.format("%.0f", val);
+            }
+        } else {
+            ticksText = String.format("%.0f", val);
+        }
+        return ticksText;
     }
 
     private void drawChart(Canvas canvas) {
@@ -488,7 +512,7 @@ public class ExpandingLineChart extends View {
 
         xAlreadyDrawn = xIdx;
 
-        Log.v(TAG, "onDraw end " + xAlreadyDrawn + " " + maxX);
+        Log.v(TAG, "drawChart end " + xAlreadyDrawn + " " + maxX);
 
 
 //        if (xAlreadyDrawn >= maxX) {
