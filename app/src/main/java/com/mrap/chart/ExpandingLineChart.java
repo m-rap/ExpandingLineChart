@@ -12,13 +12,18 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 
 import androidx.annotation.Nullable;
 
 public class ExpandingLineChart extends View {
+    public static int TYPE_NUMBER = 0;
+    public static int TYPE_DATE = 1;
 
     public static class Params {
         public Ticks xTicks = null;
@@ -30,6 +35,10 @@ public class ExpandingLineChart extends View {
         public ArrayList<String> colors = null;
         public int fps = 12;
         public int drawCountPerFrame = 1;
+        public int xType = TYPE_NUMBER;
+        public int yType = TYPE_NUMBER;
+        public String xFormat = "";
+        public String yFormat = "";
     }
 
     public interface LabelFormatterCallback {
@@ -46,6 +55,40 @@ public class ExpandingLineChart extends View {
         public PointD(double x, double y) {
             this.x = x;
             this.y = y;
+        }
+    }
+
+    public static class NumberFormatter implements LabelFormatterCallback {
+
+        String format;
+
+        public NumberFormatter(String format) {
+            this.format = format;
+        }
+
+        @Override
+        public String onLabelFormat(double value) {
+            if (format.isEmpty())
+                return String.format("%.0f", value);
+            return String.format(format, value);
+        }
+    }
+
+    public static class DateFormatter implements LabelFormatterCallback {
+
+        String format;
+        SimpleDateFormat sdf;
+
+        public DateFormatter(String format) {
+            this.format = format;
+            sdf = new SimpleDateFormat(format);
+        }
+
+        @Override
+        public String onLabelFormat(double value) {
+            if (format.isEmpty())
+                return String.format("%.0f", value);
+            return sdf.format(new Date((long)value));
         }
     }
 
@@ -101,6 +144,11 @@ public class ExpandingLineChart extends View {
     protected LabelFormatterCallback xLabelFormatterCallback = null;
     protected LabelFormatterCallback yLabelFormatterCallback = null;
 
+    protected int xType = TYPE_NUMBER;
+    protected int yType = TYPE_NUMBER;
+    protected String xFormat = "";
+    protected String yFormat = "";
+
     public ExpandingLineChart(Context context) {
         this(context, null);
     }
@@ -150,6 +198,18 @@ public class ExpandingLineChart extends View {
 
         xValueLabelEnabled = params.xValueLabelEnabled;
         yValueLabelEnabled = params.yValueLabelEnabled;
+
+        if (params.xType == TYPE_NUMBER) {
+            xLabelFormatterCallback = new NumberFormatter(params.xFormat);
+        } else if (params.xType == TYPE_DATE) {
+            xLabelFormatterCallback = new DateFormatter(params.xFormat);
+        }
+
+        if (params.yType == TYPE_NUMBER) {
+            yLabelFormatterCallback = new NumberFormatter(params.yFormat);
+        } else if (params.yType == TYPE_DATE) {
+            yLabelFormatterCallback = new DateFormatter(params.yFormat);
+        }
 
         postInvalidate();
 
@@ -398,7 +458,7 @@ public class ExpandingLineChart extends View {
     }
 
     private String formatLabel(double val, LabelFormatterCallback labelFormatterCallback) {
-        Log.d(TAG, "formatLabel labelFormatterCallback " + (labelFormatterCallback == null ? "null" : "1"));
+//        Log.d(TAG, "formatLabel labelFormatterCallback " + (labelFormatterCallback == null ? "null" : "1"));
         String ticksText;
         if (labelFormatterCallback != null) {
             ticksText = labelFormatterCallback.onLabelFormat(val);

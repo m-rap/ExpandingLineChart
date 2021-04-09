@@ -57,8 +57,8 @@ public class RnExpandingLineChart extends ExpandingLineChart {
 
     public RnExpandingLineChart(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
-        xLabelFormatterCallback = new RnLabelFormatter((ReactContext)context, this, "x");
-        yLabelFormatterCallback = new RnLabelFormatter((ReactContext)context, this, "y");
+//        xLabelFormatterCallback = new RnLabelFormatter((ReactContext)context, this, "x");
+//        yLabelFormatterCallback = new RnLabelFormatter((ReactContext)context, this, "y");
     }
 
     void setData(ReadableMap data) {
@@ -122,6 +122,22 @@ public class RnExpandingLineChart extends ExpandingLineChart {
         }
         if (data.hasKey("drawCountPerFrame")) {
             params.drawCountPerFrame = data.getInt("drawCountPerFrame");
+        }
+        if (data.hasKey("xType")) {
+            String val = data.getString("xType");
+            params.xType = val.equals("number") ? TYPE_NUMBER : val.equals("date") ? TYPE_DATE : -1;
+        }
+        if (data.hasKey("yType")) {
+            String val = data.getString("yType");
+            params.yType = val.equals("number") ? TYPE_NUMBER : val.equals("date") ? TYPE_DATE : -1;
+        }
+        if (data.hasKey("xFormat")) {
+            String val = data.getString("xFormat");
+            params.xFormat = val;
+        }
+        if (data.hasKey("yFormat")) {
+            String val = data.getString("yFormat");
+            params.yFormat = val;
         }
 
 //        setData(legend, datasets, colors);
