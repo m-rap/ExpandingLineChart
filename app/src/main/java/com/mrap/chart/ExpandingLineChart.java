@@ -88,7 +88,7 @@ public class ExpandingLineChart extends View {
         public String onLabelFormat(double value) {
             if (format.isEmpty())
                 return String.format("%.0f", value);
-            return sdf.format(new Date((long)value));
+            return sdf.format(new Date((long)value * 1000));
         }
     }
 
@@ -333,7 +333,11 @@ public class ExpandingLineChart extends View {
             if (min >= 0) {
                 ticks.valueMin = min - (min % ticks.appliedInterval);
             } else {
-                ticks.valueMin = min + (min % ticks.appliedInterval);
+                ticks.valueMin = min - (ticks.appliedInterval + (min % ticks.appliedInterval));
+//                Log.d(TAG, "min " + (long)min + " " + (long)ticks.appliedInterval + " " +
+//                        (long)((min % ticks.appliedInterval)) + " " +
+//                        (long)(ticks.appliedInterval + (min % ticks.appliedInterval)) + " " +
+//                        (long)ticks.valueMin);
             }
         }
         if (!ticks.overrideValueMax) {
@@ -383,8 +387,8 @@ public class ExpandingLineChart extends View {
 
         int bottom = (int)yAxisTextPaint.getTextSize() + padding;
         int top = padding;
-        int left = (int)(50 * density);
-        int right = padding + (int)(xAxisTextPaint.measureText(xMax + "") / 2);
+        int left = (int)(xAxisTextPaint.measureText(xMax + "") / 2);
+        int right = padding;
         chartBmp = Bitmap.createBitmap(w - left - right, h - top - bottom, Bitmap.Config.ARGB_8888);
         bmpCanvas = new Canvas(chartBmp);
         if (!running) {
@@ -408,6 +412,7 @@ public class ExpandingLineChart extends View {
                 double y = chartBmpY + (chartBmp.getHeight() - ((currTicks - yTicks.valueMin) * chartBmp.getHeight() / (yTicks.valueMax - yTicks.valueMin)));
                 //Log.v(TAG, "currTicks " + currTicks + " " + ticksValueMax + " " + y);
                 canvas.drawLine(chartBmpX, (float) y, chartBmpX + chartBmp.getWidth(), (float) y, gridPaint);
+//                Log.d(TAG, "formatting ticks " + (long)currTicks + String.format(" %.0f", currTicks));
                 String ticksText = formatLabel(currTicks, yLabelFormatterCallback);
                 canvas.drawText(ticksText, chartBmpX - axisTextPadding, (float) y + (yAxisTextPaint.getTextSize() / 2), yAxisTextPaint);
             }

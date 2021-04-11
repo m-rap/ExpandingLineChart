@@ -92,7 +92,10 @@ public class RnExpandingLineChart extends ExpandingLineChart {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                float val = (float)dataSet.getDouble(key);
+                double val = dataSet.getDouble(key);
+//                if (legendName.equals("Total Saldo")) {
+//                    Log.d(TAG, "java " + (long) datetime + " " + (long) val);
+//                }
 
                 dataset.add(new PointD(datetime, val));
             }
@@ -145,24 +148,24 @@ public class RnExpandingLineChart extends ExpandingLineChart {
     }
 
     private void parseTicks(ReadableMap data, Params params, String key) {
-        ReadableMap xTicksRn = data.getMap(key);
+        ReadableMap ticksRn = data.getMap(key);
         Ticks ticks = new Ticks();
-        if (xTicksRn.hasKey("enabled")) {
-            ticks.enabled = xTicksRn.getBoolean("enabled");
+        if (ticksRn.hasKey("enabled")) {
+            ticks.enabled = ticksRn.getBoolean("enabled");
         }
-        if (xTicksRn.hasKey("interval")) {
-            ticks.interval = xTicksRn.getDouble("interval");
+        if (ticksRn.hasKey("interval")) {
+            ticks.interval = ticksRn.getDouble("interval");
         }
-        if (xTicksRn.hasKey("countMax")) {
-            ticks.countMax = xTicksRn.getInt("countMax");
+        if (ticksRn.hasKey("countMax")) {
+            ticks.countMax = ticksRn.getInt("countMax");
         }
-        if (xTicksRn.hasKey("valueMin")) {
+        if (ticksRn.hasKey("valueMin")) {
             ticks.overrideValueMin = true;
-            ticks.valueMin = xTicksRn.getDouble("valueMin");
+            ticks.valueMin = ticksRn.getDouble("valueMin");
         }
-        if (xTicksRn.hasKey("valueMax")) {
+        if (ticksRn.hasKey("valueMax")) {
             ticks.overrideValueMax = true;
-            ticks.valueMax = xTicksRn.getDouble("valueMax");
+            ticks.valueMax = ticksRn.getDouble("valueMax");
         }
         if (key.equals("xTicks")) {
             params.xTicks = ticks;
