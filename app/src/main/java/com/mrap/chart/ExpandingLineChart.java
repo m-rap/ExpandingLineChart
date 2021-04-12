@@ -164,7 +164,8 @@ public class ExpandingLineChart extends View {
         yAxisTextPaint.setTextSize(12 * scaledDensity);
 
         xAxisTextPaint = new Paint();
-        xAxisTextPaint.setTextAlign(Paint.Align.CENTER);
+//        xAxisTextPaint.setTextAlign(Paint.Align.CENTER);
+        xAxisTextPaint.setTextAlign(Paint.Align.RIGHT);
         xAxisTextPaint.setTextSize(12 * scaledDensity);
 
         gridPaint = new Paint();
@@ -385,9 +386,10 @@ public class ExpandingLineChart extends View {
 
         float density = getContext().getResources().getDisplayMetrics().density;
 
-        int bottom = (int)yAxisTextPaint.getTextSize() + padding;
+//        int bottom = (int)yAxisTextPaint.getTextSize() + 2 * padding;
+        int bottom = (int)yAxisTextPaint.measureText("00000") + padding + axisTextPadding;
         int top = padding;
-        int left = (int)(xAxisTextPaint.measureText(xMax + "") / 2);
+        int left = (int)xAxisTextPaint.measureText(String.format("%.0f", yTicks.valueMax)) + padding + axisTextPadding;
         int right = padding;
         chartBmp = Bitmap.createBitmap(w - left - right, h - top - bottom, Bitmap.Config.ARGB_8888);
         bmpCanvas = new Canvas(chartBmp);
@@ -420,12 +422,12 @@ public class ExpandingLineChart extends View {
 
         if (xTicks.enabled) {
             for (double currTicks = xTicks.valueMin; currTicks <= xTicks.valueMax; currTicks += xTicks.appliedInterval) {
-                double x = chartBmpX + ((currTicks - xTicks.valueMin) * chartBmp.getWidth() / (xTicks.valueMax - xTicks.valueMin));
-                float y = chartBmpY + chartBmp.getHeight();
                 //Log.v(TAG, "currTicks " + currTicks + " " + ticksValueMax + " " + y);
-                canvas.drawLine((float)x, chartBmpY, (float)x, y, gridPaint);
-                String ticksText = formatLabel(currTicks, xLabelFormatterCallback);
-                canvas.drawText(ticksText, (float)x, y + xAxisTextPaint.getTextSize() + axisTextPadding, xAxisTextPaint);
+                double val = currTicks;
+                double[] xy = new double[2];
+                drawXLabel(canvas, val, xy);
+                double x = xy[0], y = xy[1];
+                canvas.drawLine((float)x, chartBmpY, (float)x, (float)y, gridPaint);
             }
         }
 
@@ -441,10 +443,10 @@ public class ExpandingLineChart extends View {
                 }
                 if (xValueLabelEnabled) {
                     double val = dataset.get(j).x;
-                    double x = chartBmpX + ((val - xTicks.valueMin) * chartBmp.getWidth() / (xTicks.valueMax - xTicks.valueMin));
-                    float y = chartBmpY + chartBmp.getHeight();
-                    String ticksText = formatLabel(val, xLabelFormatterCallback);
-                    canvas.drawText(ticksText, (float)x, y + xAxisTextPaint.getTextSize() + axisTextPadding, xAxisTextPaint);
+                    double[] xy = new double[2];
+                    drawXLabel(canvas, val, xy);
+                    double x = xy[0], y = xy[1];
+                    canvas.drawLine((float)x, chartBmpY, (float)x, (float)y, gridPaint);
                 }
             }
         }
@@ -454,12 +456,18 @@ public class ExpandingLineChart extends View {
 
         canvas.drawLine(chartBmpX, chartBmpY, chartBmpX, chartBmpY + chartBmp.getHeight() + (axisPaint.getStrokeWidth() / 2), axisPaint);
         canvas.drawLine(chartBmpX, chartBmpY + chartBmp.getHeight(), chartBmpX + chartBmp.getWidth(), chartBmpY + chartBmp.getHeight(), axisPaint);
+    }
 
-//        canvas.drawText(ticksValueMax + "", chartBmpX - axisTextPadding, chartBmpY + (yAxisTextPaint.getTextSize() / 2), yAxisTextPaint);
-//        canvas.drawText(ticksValueMin + "", chartBmpX - axisTextPadding, chartBmpY + (yAxisTextPaint.getTextSize() / 2) + chartBmp.getHeight(), yAxisTextPaint);
-
-//        canvas.drawText(xMin + "", chartBmpX, chartBmpY + padding + xAxisTextPaint.getTextSize() + chartBmp.getHeight(), xAxisTextPaint);
-//        canvas.drawText(xMax + "", chartBmpX + chartBmp.getWidth(), chartBmpY + padding + xAxisTextPaint.getTextSize() + chartBmp.getHeight(), xAxisTextPaint);
+    private void drawXLabel(Canvas canvas, double val, double[] xy) {
+        double x = chartBmpX + ((val - xTicks.valueMin) * chartBmp.getWidth() / (xTicks.valueMax - xTicks.valueMin));
+        double y = chartBmpY + chartBmp.getHeight();
+        String ticksText = formatLabel(val, xLabelFormatterCallback);
+        canvas.save();
+        canvas.translate((float)x + xAxisTextPaint.getTextSize() / 2, (float)y + xAxisTextPaint.getTextSize() / 2 + axisTextPadding);
+        canvas.rotate(-45);
+        canvas.drawText(ticksText, 0, 0, xAxisTextPaint);
+        canvas.restore();
+        xy[0] = x; xy[1] = y;
     }
 
     private String formatLabel(double val, LabelFormatterCallback labelFormatterCallback) {
@@ -492,8 +500,6 @@ public class ExpandingLineChart extends View {
 
         if (clearBmp) {
             clearBmp = false;
-//            canvas.drawColor(Color.WHITE);
-//            canvas.drawColor(Color.parseColor("#00ffffff"));
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
 
             new Handler(getContext().getMainLooper()).postDelayed(new Runnable() {
@@ -532,7 +538,8 @@ public class ExpandingLineChart extends View {
                     long datetime = (long)dataset.get(xIdx).x;
                     float val = (float)dataset.get(xIdx).y;
 
-                    float scaledX = (float) ((datetime - xMin) * canvas.getWidth() / (xMax - xMin));
+//                    float scaledX = (float) ((datetime - xMin) * canvas.getWidth() / (xMax - xMin));
+                    float scaledX = (float) ((datetime - xMin) * canvas.getWidth() / (xTicks.valueMax - xTicks.valueMin));
 //                    float scaledY = (float) ((val - yMin) * canvas.getHeight() / (yMax - yMin));
 //                    float scaledY = (float) (canvas.getHeight() - ((val - yMin) * canvas.getHeight() / (yMax - yMin)));
                     float scaledY = (float) (canvas.getHeight() - ((val - yTicks.valueMin) * canvas.getHeight() / (yTicks.valueMax - yTicks.valueMin)));
