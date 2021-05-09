@@ -244,6 +244,7 @@ public class ExpandingLineChart extends View {
     }
 
     private void setDataIntern(ArrayList<String> legend, ArrayList<ArrayList<PointD>> datasets, ArrayList<String> colors) {
+        Log.d(TAG, "setDataIntern");
         yMax = Float.MIN_VALUE;
         yMin = Float.MAX_VALUE;
         xMax = Float.MIN_VALUE;
@@ -260,6 +261,7 @@ public class ExpandingLineChart extends View {
         };
 
         for (int i = 0; i < legend.size(); i++) {
+//            Log.d(TAG, "setDataIntern dataset " + i + " " + legend.get(i));
             ArrayList<PointD> dataset = datasets.get(i);
             for (int j = 0; j < dataset.size(); j++) {
                 PointD p = dataset.get(j);
@@ -276,6 +278,7 @@ public class ExpandingLineChart extends View {
                     yMax = p.y;
                 }
             }
+//            Log.d(TAG, i + " sorting");
             Collections.sort(dataset, comparator);
         }
         float density = getContext().getResources().getDisplayMetrics().density;
@@ -291,6 +294,8 @@ public class ExpandingLineChart extends View {
 
         calcTicks(yTicks, yMin, yMax);
         calcTicks(xTicks, xMin, xMax);
+
+        Log.d(TAG, "setDataIntern finished");
     }
 
     public void setXTicks(Ticks xTicks) {
@@ -348,21 +353,28 @@ public class ExpandingLineChart extends View {
             }
         }
         double range = ticks.valueMax - ticks.valueMin;
+//        Log.d(TAG, String.format("pre ticks minmax %.3f %.3f vminmax %.3f %.3f > %.3f apint %.3f %.3f c %d", min, max,
+//                ticks.valueMin, ticks.valueMax, range, ticks.appliedInterval, ticks.interval, ticks.countMax));
         while (true) {
             ticksCount = (int)(range / ticks.appliedInterval);
             if (ticksCount <= ticks.countMax) {
                 break;
             } else {
                 double div = range / ticks.countMax;
-                ticks.appliedInterval = Math.floor(div / ticks.interval) * ticks.interval;
+                ticks.appliedInterval = Math.ceil(div / ticks.interval) * ticks.interval;
+//                Log.d(TAG, String.format("div %.3f = %.3f / %d", div, range, ticks.countMax));
+//                Log.d(TAG, String.format("Math.ceil(div / ticks.interval) %.3f", Math.ceil(div / ticks.interval)));
+//                Log.d(TAG, String.format("ap %.3f = %.3f * %.3f", ticks.appliedInterval, Math.ceil(div / ticks.interval), ticks.interval));
                 ticks.valueMax = Math.floor(max / ticks.appliedInterval) * ticks.appliedInterval;
                 if (ticks.valueMax < max) {
                     ticks.valueMax += ticks.appliedInterval;
                 }
+//                Log.d(TAG, String.format("ticks minmax %.3f %.3f vminmax %.3f %.3f > %.3f apint %.3f %.3f c %d", min, max,
+//                        ticks.valueMin, ticks.valueMax, range, ticks.appliedInterval, ticks.interval, ticks.countMax));
             }
         }
-
-        Log.v(TAG, "ticks " + ticks.valueMin + " " + ticks.valueMax + " " + ticks.appliedInterval + " " + ticksCount);
+//        Log.d(TAG, String.format("post ticks minmax %.3f %.3f vminmax %.3f %.3f > %.3f apint %.3f %.3f c %d %d", min, max,
+//                ticks.valueMin, ticks.valueMax, range, ticks.appliedInterval, ticks.interval, ticks.countMax, ticksCount));
     }
 
     boolean running = false;
