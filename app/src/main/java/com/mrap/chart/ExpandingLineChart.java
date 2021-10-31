@@ -24,6 +24,7 @@ import androidx.annotation.Nullable;
 public class ExpandingLineChart extends View {
     public static int TYPE_NUMBER = 0;
     public static int TYPE_DATE = 1;
+    public static int TYPE_NOTYPE = -1;
 
     public static class Params {
         public Ticks xTicks = null;
@@ -39,6 +40,8 @@ public class ExpandingLineChart extends View {
         public int yType = TYPE_NUMBER;
         public String xFormat = "";
         public String yFormat = "";
+        public LabelFormatterCallback xLabelFormatterCallback = null;
+        public LabelFormatterCallback yLabelFormatterCallback = null;
     }
 
     public interface LabelFormatterCallback {
@@ -121,8 +124,8 @@ public class ExpandingLineChart extends View {
 
     protected int padding;
     protected int axisTextPadding;
-    protected final int chartBmpX;
-    protected final int chartBmpY;
+    protected int chartBmpX;
+    protected int chartBmpY;
 
     public static class Ticks {
         public boolean enabled = true;
@@ -161,12 +164,12 @@ public class ExpandingLineChart extends View {
 
         yAxisTextPaint = new Paint();
         yAxisTextPaint.setTextAlign(Paint.Align.RIGHT);
-        yAxisTextPaint.setTextSize(12 * scaledDensity);
+        yAxisTextPaint.setTextSize(10 * scaledDensity);
 
         xAxisTextPaint = new Paint();
 //        xAxisTextPaint.setTextAlign(Paint.Align.CENTER);
         xAxisTextPaint.setTextAlign(Paint.Align.RIGHT);
-        xAxisTextPaint.setTextSize(12 * scaledDensity);
+        xAxisTextPaint.setTextSize(10 * scaledDensity);
 
         gridPaint = new Paint();
         gridPaint.setColor(Color.GRAY);
@@ -210,6 +213,14 @@ public class ExpandingLineChart extends View {
             yLabelFormatterCallback = new NumberFormatter(params.yFormat);
         } else if (params.yType == TYPE_DATE) {
             yLabelFormatterCallback = new DateFormatter(params.yFormat);
+        }
+
+        if (params.xLabelFormatterCallback != null) {
+            xLabelFormatterCallback = params.xLabelFormatterCallback;
+        }
+
+        if (params.yLabelFormatterCallback != null) {
+            yLabelFormatterCallback = params.yLabelFormatterCallback;
         }
 
         postInvalidate();
@@ -403,6 +414,8 @@ public class ExpandingLineChart extends View {
         int top = padding;
         int left = (int)xAxisTextPaint.measureText(String.format("%.0f", yTicks.valueMax)) + padding + axisTextPadding;
         int right = padding;
+        chartBmpX = left;
+        chartBmpY = top;
         chartBmp = Bitmap.createBitmap(w - left - right, h - top - bottom, Bitmap.Config.ARGB_8888);
         bmpCanvas = new Canvas(chartBmp);
         if (!running) {
