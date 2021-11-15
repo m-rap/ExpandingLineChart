@@ -27,8 +27,8 @@ public class ExpandingLineChart extends View {
   public static int TYPE_NOTYPE = -1;
 
   public static class Params {
-    public Ticks xTicks = null;
-    public Ticks yTicks = null;
+    public Ticks xTicks = new Ticks();
+    public Ticks yTicks = new Ticks();
     public boolean xValueLabelEnabled = true;
     public boolean yValueLabelEnabled = false;
     public ArrayList<String> legend = null;
@@ -572,7 +572,7 @@ public class ExpandingLineChart extends View {
           float val = (float) dataset.get(xIdx).y;
 
 //                    float scaledX = (float) ((datetime - xMin) * canvas.getWidth() / (xMax - xMin));
-          float scaledX = (float) ((datetime - xMin) * canvas.getWidth() / (xTicks.valueMax - xTicks.valueMin));
+          float scaledX = (float) ((datetime - xTicks.valueMin) * canvas.getWidth() / (xTicks.valueMax - xTicks.valueMin));
 //                    float scaledY = (float) ((val - yMin) * canvas.getHeight() / (yMax - yMin));
 //                    float scaledY = (float) (canvas.getHeight() - ((val - yMin) * canvas.getHeight() / (yMax - yMin)));
           float scaledY = (float) (canvas.getHeight() - ((val - yTicks.valueMin) * canvas.getHeight() / (yTicks.valueMax - yTicks.valueMin)));
