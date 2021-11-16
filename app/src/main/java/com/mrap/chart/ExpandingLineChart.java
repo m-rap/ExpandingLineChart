@@ -223,6 +223,7 @@ public class ExpandingLineChart extends View {
       yLabelFormatterCallback = params.yLabelFormatterCallback;
     }
 
+    Log.d(TAG, "setParams finished, postInvalidate, running: " + running);
     postInvalidate();
 
     xAlreadyDrawn = 0;
@@ -305,6 +306,8 @@ public class ExpandingLineChart extends View {
 
     calcTicks(yTicks, yMin, yMax);
     calcTicks(xTicks, xMin, xMax);
+
+    recreateChartBmp(getMeasuredWidth(), getMeasuredHeight());
 
     Log.d(TAG, "setDataIntern finished");
   }
@@ -397,6 +400,21 @@ public class ExpandingLineChart extends View {
 
   boolean running = false;
 
+  protected void recreateChartBmp(int w, int h) {
+    //    float density = getContext().getResources().getDisplayMetrics().density;
+
+//        int bottom = (int)yAxisTextPaint.getTextSize() + 2 * padding;
+    int bottom = (int) yAxisTextPaint.measureText("00000") + padding + axisTextPadding;
+    int top = padding;
+    int left = (int) xAxisTextPaint.measureText(String.format("%.0f", yTicks.valueMax)) + padding + axisTextPadding;
+    int right = padding;
+    chartBmpX = left;
+    chartBmpY = top;
+    Log.d(TAG, String.format("w %d %d %d, h %d %d %d", w, left, right, h, top, bottom));
+    chartBmp = Bitmap.createBitmap(w - left - right, h - top - bottom, Bitmap.Config.ARGB_8888);
+    bmpCanvas = new Canvas(chartBmp);
+  }
+
   @Override
   protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -409,22 +427,13 @@ public class ExpandingLineChart extends View {
 
 //        int w = getMeasuredWidth(), h = getMeasuredHeight();
     int w = width, h = height;
-//        Log.d(TAG, "onMeasure w h " + w + " " + h);
+    Log.d(TAG, "onResize w h " + w + " " + h);
     if (w == 0 || h == 0) {
       return;
     }
 
-    float density = getContext().getResources().getDisplayMetrics().density;
+    recreateChartBmp(w, h);
 
-//        int bottom = (int)yAxisTextPaint.getTextSize() + 2 * padding;
-    int bottom = (int) yAxisTextPaint.measureText("00000") + padding + axisTextPadding;
-    int top = padding;
-    int left = (int) xAxisTextPaint.measureText(String.format("%.0f", yTicks.valueMax)) + padding + axisTextPadding;
-    int right = padding;
-    chartBmpX = left;
-    chartBmpY = top;
-    chartBmp = Bitmap.createBitmap(w - left - right, h - top - bottom, Bitmap.Config.ARGB_8888);
-    bmpCanvas = new Canvas(chartBmp);
     if (!running) {
       running = true;
       drawChart(bmpCanvas);
