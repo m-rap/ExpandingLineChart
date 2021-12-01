@@ -192,6 +192,8 @@ public class ExpandingLineChart extends View {
       setDataIntern(params.legend, params.datasets, params.colors);
     }
 
+    Log.d(TAG, "setParams xTicks " + params.xTicks + " yTicks " + params.yTicks);
+
     if (params.xTicks != null) {
       setXTicksIntern(params.xTicks);
     }
@@ -296,6 +298,10 @@ public class ExpandingLineChart extends View {
 
     paintList.clear();
     for (String colStr : colors) {
+      if (colStr == null) {
+        paintList.add(null);
+        continue;
+      }
       Paint p = new Paint();
       p.setStrokeWidth(2 * density);
       p.setColor(Color.parseColor(colStr));
@@ -344,55 +350,77 @@ public class ExpandingLineChart extends View {
   }
 
   private void calcTicks(Ticks ticks, double min, double max) {
-    if (ticks.overrideValueMin && ticks.overrideValueMax) {
-      return;
-    }
+    synchronized (ticks) {
+//      if (ticks.overrideValueMin && ticks.overrideValueMax) {
+//        return;
+//      }
 
-    int ticksCount;
-    ticks.appliedInterval = ticks.interval;
+      int ticksCount;
+      ticks.appliedInterval = ticks.interval;
 
-    while (true) {
-      if (!ticks.overrideValueMin) {
-        double mod = min % ticks.appliedInterval;
-        if (mod / ticks.appliedInterval > 0.5) {
-          ticks.valueMin = min - mod;
-        } else {
-          ticks.valueMin = min - (ticks.appliedInterval + mod);
+      int stateOnlyCalcDiv = 0;
+      int stateIgnoreCountMax = 1;
+      int stateWillStop = -1;
+
+      int currState = stateOnlyCalcDiv;
+
+      while (true) {
+        if (!ticks.overrideValueMin) {
+          double mod = min % ticks.appliedInterval;
+          if (mod / ticks.appliedInterval > 0.5) {
+            ticks.valueMin = min - mod;
+          } else {
+            ticks.valueMin = min - (ticks.appliedInterval + mod);
 //                Log.d(TAG, "min " + (long)min + " " + (long)ticks.appliedInterval + " " +
 //                        (long)((min % ticks.appliedInterval)) + " " +
 //                        (long)(ticks.appliedInterval + (min % ticks.appliedInterval)) + " " +
 //                        (long)ticks.valueMin);
+          }
         }
-      }
-      if (!ticks.overrideValueMax) {
-        ticks.valueMax = Math.floor(max / ticks.appliedInterval) * ticks.appliedInterval;
-        if (ticks.valueMax < max) {
-          ticks.valueMax += ticks.appliedInterval;
+        if (!ticks.overrideValueMax) {
+          ticks.valueMax = Math.floor(max / ticks.appliedInterval) * ticks.appliedInterval;
+          if (ticks.valueMax < max) {
+            ticks.valueMax += ticks.appliedInterval;
+          }
         }
-      }
-      double range = ticks.valueMax - ticks.valueMin;
-//        Log.d(TAG, String.format("pre ticks minmax %.3f %.3f vminmax %.3f %.3f > %.3f apint %.3f %.3f c %d", min, max,
-//                ticks.valueMin, ticks.valueMax, range, ticks.appliedInterval, ticks.interval, ticks.countMax));
-//        while (true) {
-      ticksCount = (int) (range / ticks.appliedInterval);
-      if (ticksCount <= ticks.countMax) {
-        break;
-      } else {
+        double range = ticks.valueMax - ticks.valueMin;
+
+        ticksCount = (int) (range / ticks.appliedInterval);
+//        Log.d(TAG, "calcTicks " + ((ticks == xTicks) ? "xTicks" : "yTicks") + " range " + range +
+//          " appliedInterval " + ticks.appliedInterval + " ticks count " + ticksCount + " state " +
+//          currState);
+        if (ticksCount <= ticks.countMax) {
+          break;
+        }
+
+        if (currState == stateOnlyCalcDiv) {
+        } else if (currState == stateIgnoreCountMax) {
+          break;
+        }
+
         double div = range / ticks.countMax;
         ticks.appliedInterval = Math.ceil(div / ticks.interval) * ticks.interval;
 //                Log.d(TAG, String.format("div %.3f = %.3f / %d", div, range, ticks.countMax));
 //                Log.d(TAG, String.format("Math.ceil(div / ticks.interval) %.3f", Math.ceil(div / ticks.interval)));
 //                Log.d(TAG, String.format("ap %.3f = %.3f * %.3f", ticks.appliedInterval, Math.ceil(div / ticks.interval), ticks.interval));
-        ticks.valueMax = Math.floor(max / ticks.appliedInterval) * ticks.appliedInterval;
-        if (ticks.valueMax < max) {
-          ticks.valueMax += ticks.appliedInterval;
+
+        if (!ticks.overrideValueMax) {
+          ticks.valueMax = Math.floor(max / ticks.appliedInterval) * ticks.appliedInterval;
+          if (ticks.valueMax < max) {
+            ticks.valueMax += ticks.appliedInterval;
+          }
+        } else {
+          if (currState == stateOnlyCalcDiv) {
+            currState = stateIgnoreCountMax;
+          }
         }
+
 //                Log.d(TAG, String.format("ticks minmax %.3f %.3f vminmax %.3f %.3f > %.3f apint %.3f %.3f c %d", min, max,
 //                        ticks.valueMin, ticks.valueMax, range, ticks.appliedInterval, ticks.interval, ticks.countMax));
       }
-    }
 //        Log.d(TAG, String.format("post ticks minmax %.3f %.3f vminmax %.3f %.3f > %.3f apint %.3f %.3f c %d %d", min, max,
 //                ticks.valueMin, ticks.valueMax, range, ticks.appliedInterval, ticks.interval, ticks.countMax, ticksCount));
+    }
   }
 
   boolean running = false;
@@ -442,24 +470,29 @@ public class ExpandingLineChart extends View {
     float density = getContext().getResources().getDisplayMetrics().density;
 
     if (yTicks.enabled) {
-      for (double currTicks = yTicks.valueMin; currTicks <= yTicks.valueMax; currTicks += yTicks.appliedInterval) {
-        double y = chartBmpY + (chartBmp.getHeight() - ((currTicks - yTicks.valueMin) * chartBmp.getHeight() / (yTicks.valueMax - yTicks.valueMin)));
-        //Log.v(TAG, "currTicks " + currTicks + " " + ticksValueMax + " " + y);
-        canvas.drawLine(chartBmpX, (float) y, chartBmpX + chartBmp.getWidth(), (float) y, gridPaint);
+      synchronized (yTicks) {
+        for (double currTicks = yTicks.valueMin; currTicks <= yTicks.valueMax; currTicks += yTicks.appliedInterval) {
+//          Log.d(TAG, "drawing ytick " + currTicks + " max " + yTicks.valueMax + " itvl " + yTicks.appliedInterval);
+          double y = chartBmpY + (chartBmp.getHeight() - ((currTicks - yTicks.valueMin) * chartBmp.getHeight() / (yTicks.valueMax - yTicks.valueMin)));
+          //Log.v(TAG, "currTicks " + currTicks + " " + ticksValueMax + " " + y);
+          canvas.drawLine(chartBmpX, (float) y, chartBmpX + chartBmp.getWidth(), (float) y, gridPaint);
 //                Log.d(TAG, "formatting ticks " + (long)currTicks + String.format(" %.0f", currTicks));
-        String ticksText = formatLabel(currTicks, yLabelFormatterCallback);
-        canvas.drawText(ticksText, chartBmpX - axisTextPadding, (float) y + (yAxisTextPaint.getTextSize() / 2), yAxisTextPaint);
+          String ticksText = formatLabel(currTicks, yLabelFormatterCallback);
+          canvas.drawText(ticksText, chartBmpX - axisTextPadding, (float) y + (yAxisTextPaint.getTextSize() / 2), yAxisTextPaint);
+        }
       }
     }
 
     if (xTicks.enabled) {
-      for (double currTicks = xTicks.valueMin; currTicks <= xTicks.valueMax; currTicks += xTicks.appliedInterval) {
-        //Log.v(TAG, "currTicks " + currTicks + " " + ticksValueMax + " " + y);
-        double val = currTicks;
-        double[] xy = new double[2];
-        drawXLabel(canvas, val, xy);
-        double x = xy[0], y = xy[1];
-        canvas.drawLine((float) x, chartBmpY, (float) x, (float) y, gridPaint);
+      synchronized (xTicks) {
+        for (double currTicks = xTicks.valueMin; currTicks <= xTicks.valueMax; currTicks += xTicks.appliedInterval) {
+//          Log.d(TAG, "drawing xtick " + currTicks + " max " + xTicks.valueMax + " itvl " + xTicks.appliedInterval);
+          double val = currTicks;
+          double[] xy = new double[2];
+          drawXLabel(canvas, val, xy);
+          double x = xy[0], y = xy[1];
+          canvas.drawLine((float) x, chartBmpY, (float) x, (float) y, gridPaint);
+        }
       }
     }
 
@@ -565,6 +598,9 @@ public class ExpandingLineChart extends View {
 
     for (int j = 0; toDrawCount < drawCountPerFrame && j < maxX; j++, xIdx++) {
       for (int i = 0; i < legendList.size(); i++) {
+        if (legendList.get(i) == null) {
+          continue;
+        }
         ArrayList<PointD> dataset = datasetList.get(i);
 
         if (xIdx < dataset.size()) {
@@ -601,6 +637,9 @@ public class ExpandingLineChart extends View {
 //        }
 
     for (int i = 0; i < legendList.size(); i++) {
+      if (legendList.get(i) == null) {
+        continue;
+      }
       int vtxIdx = 0;
       for (int j = 0; j < toDrawSizes[i] - 1; j++) {
         int toDrawIdx = i * 200 + j * 2;
