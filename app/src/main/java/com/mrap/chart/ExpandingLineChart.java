@@ -474,6 +474,7 @@ public class ExpandingLineChart extends View {
 
   private void onResize(int width, int height) {
     xAlreadyDrawn = 0;
+    clearBmp = true;
 
 //        int w = getMeasuredWidth(), h = getMeasuredHeight();
     int w = width, h = height;
@@ -585,6 +586,7 @@ public class ExpandingLineChart extends View {
     Log.v(TAG, "drawChart clear " + clearBmp + " xAlreadyDrawn " + xAlreadyDrawn + " canvas " + ((canvas != null) ? "1" : "null"));
 
     if (getVisibility() != VISIBLE) {
+      running = false;
       return;
     }
 
