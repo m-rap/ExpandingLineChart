@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 public class ExpandingLineChart extends View {
@@ -439,13 +440,34 @@ public class ExpandingLineChart extends View {
     chartBmpX = left;
     chartBmpY = top;
     Log.d(TAG, String.format("w %d %d %d, h %d %d %d", w, left, right, h, top, bottom));
-    chartBmp = Bitmap.createBitmap(w - left - right, h - top - bottom, Bitmap.Config.ARGB_8888);
+
+    int bmpW = w - left - right;
+    int bmpH = h - top - bottom;
+
+    if (bmpW <= 0 || bmpH <= 0) {
+      chartBmp = null;
+      bmpCanvas = null;
+      return;
+    }
+
+    chartBmp = Bitmap.createBitmap(bmpW, bmpH, Bitmap.Config.ARGB_8888);
     bmpCanvas = new Canvas(chartBmp);
   }
 
   @Override
   protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+
+    onResize(getMeasuredWidth(), getMeasuredHeight());
+  }
+
+  @Override
+  protected void onVisibilityChanged(@NonNull View changedView, int visibility) {
+    super.onVisibilityChanged(changedView, visibility);
+
+    if (visibility != VISIBLE) {
+      return;
+    }
 
     onResize(getMeasuredWidth(), getMeasuredHeight());
   }
@@ -470,7 +492,7 @@ public class ExpandingLineChart extends View {
 
   @Override
   protected void onDraw(Canvas canvas) {
-    if (datasetList.size() == 0 || chartBmp == null) {
+    if (getVisibility() != VISIBLE || datasetList.size() == 0 || chartBmp == null) {
       super.onDraw(canvas);
       return;
     }
@@ -561,6 +583,10 @@ public class ExpandingLineChart extends View {
 
   private void drawChart(Canvas canvas) {
     Log.v(TAG, "drawChart clear " + clearBmp + " xAlreadyDrawn " + xAlreadyDrawn + " canvas " + ((canvas != null) ? "1" : "null"));
+
+    if (getVisibility() != VISIBLE) {
+      return;
+    }
 
     if (canvas == null) {
       new Handler(getContext().getMainLooper()).postDelayed(new Runnable() {
