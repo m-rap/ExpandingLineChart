@@ -383,7 +383,7 @@ public class ExpandingLineChart extends View {
         }
         if (!ticks.overrideValueMax) {
           ticks.valueMax = Math.floor(max / ticks.appliedInterval) * ticks.appliedInterval;
-          if (ticks.valueMax < max) {
+          if (ticks.valueMax <= max) {
             ticks.valueMax += ticks.appliedInterval;
           }
         }
@@ -410,7 +410,7 @@ public class ExpandingLineChart extends View {
 
         if (!ticks.overrideValueMax) {
           ticks.valueMax = Math.floor(max / ticks.appliedInterval) * ticks.appliedInterval;
-          if (ticks.valueMax < max) {
+          if (ticks.valueMax <= max) {
             ticks.valueMax += ticks.appliedInterval;
           }
         } else {
@@ -688,7 +688,13 @@ public class ExpandingLineChart extends View {
         vtxBuff[vtxIdx++] = toDraw[toDrawIdx2 + 1];
       }
 
-      canvas.drawLines(vtxBuff, 0, vtxIdx, paintList.get(i % paintList.size()));
+      Paint p = paintList.get(i % paintList.size());
+      canvas.drawLines(vtxBuff, 0, vtxIdx, p);
+      if (vtxIdx == 4 &&
+          vtxBuff[0] == vtxBuff[2] &&
+          vtxBuff[1] == vtxBuff[3]) {
+        canvas.drawCircle(vtxBuff[0], vtxBuff[1], p.getStrokeWidth() / 2, p);
+      }
     }
 
     xAlreadyDrawn = xIdx;
