@@ -46,7 +46,7 @@ public class RnExpandingLineChart extends ExpandingLineChart {
 //            Log.d(TAG, "event onLabelFormat " + eventName + " " + value);
             reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(view.getId(),
                     eventName, args);
-            Log.d(TAG, "event onLabelFormat " + eventName + " value " + value + " result " + args.getString("result"));
+            //Log.d(TAG, "event onLabelFormat " + eventName + " value " + value + " result " + args.getString("result"));
             return args.getString("result");
         }
     }
@@ -69,7 +69,7 @@ public class RnExpandingLineChart extends ExpandingLineChart {
         ReadableArray legendRn = data.getArray("legend");
         for (int i = 0; i < legendRn.size(); i++) {
             String legendName = legendRn.getString(i);
-            Log.d(TAG, "data set name " + legendName);
+            //Log.d(TAG, "data set name " + legendName);
             legend.add(legendName);
 
             ReadableMap datasetContainer = data.getMap("datasets").getMap(legendName);

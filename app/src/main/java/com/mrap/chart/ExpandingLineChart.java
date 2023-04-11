@@ -193,7 +193,7 @@ public class ExpandingLineChart extends View {
       setDataIntern(params.legend, params.datasets, params.colors);
     }
 
-    Log.d(TAG, "setParams xTicks " + params.xTicks + " yTicks " + params.yTicks);
+    //Log.d(TAG, "setParams xTicks " + params.xTicks + " yTicks " + params.yTicks);
 
     if (params.xTicks != null) {
       setXTicksIntern(params.xTicks);
@@ -226,7 +226,7 @@ public class ExpandingLineChart extends View {
       yLabelFormatterCallback = params.yLabelFormatterCallback;
     }
 
-    Log.d(TAG, "setParams finished, postInvalidate, running: " + running);
+    //Log.d(TAG, "setParams finished, postInvalidate, running: " + running);
     postInvalidate();
 
     xAlreadyDrawn = 0;
@@ -259,7 +259,7 @@ public class ExpandingLineChart extends View {
   }
 
   private void setDataIntern(ArrayList<String> legend, ArrayList<ArrayList<PointD>> datasets, ArrayList<String> colors) {
-    Log.d(TAG, "setDataIntern");
+    //Log.d(TAG, "setDataIntern");
     yMax = Float.MIN_VALUE;
     yMin = Float.MAX_VALUE;
     xMax = Float.MIN_VALUE;
@@ -316,7 +316,7 @@ public class ExpandingLineChart extends View {
 
     recreateChartBmp(getMeasuredWidth(), getMeasuredHeight());
 
-    Log.d(TAG, "setDataIntern finished");
+    //Log.d(TAG, "setDataIntern finished");
   }
 
   public void setXTicks(Ticks xTicks) {
@@ -439,7 +439,7 @@ public class ExpandingLineChart extends View {
     int right = padding;
     chartBmpX = left;
     chartBmpY = top;
-    Log.d(TAG, String.format("w %d %d %d, h %d %d %d", w, left, right, h, top, bottom));
+    //Log.d(TAG, String.format("w %d %d %d, h %d %d %d", w, left, right, h, top, bottom));
 
     int bmpW = w - left - right;
     int bmpH = h - top - bottom;
@@ -478,7 +478,7 @@ public class ExpandingLineChart extends View {
 
 //        int w = getMeasuredWidth(), h = getMeasuredHeight();
     int w = width, h = height;
-    Log.d(TAG, "onResize w h " + w + " " + h);
+    //Log.d(TAG, "onResize w h " + w + " " + h);
     if (w == 0 || h == 0) {
       return;
     }
@@ -583,7 +583,7 @@ public class ExpandingLineChart extends View {
   }
 
   private void drawChart(Canvas canvas) {
-    Log.v(TAG, "drawChart clear " + clearBmp + " xAlreadyDrawn " + xAlreadyDrawn + " canvas " + ((canvas != null) ? "1" : "null"));
+    //Log.v(TAG, "drawChart clear " + clearBmp + " xAlreadyDrawn " + xAlreadyDrawn + " canvas " + ((canvas != null) ? "1" : "null"));
 
     if (getVisibility() != VISIBLE) {
       running = false;
@@ -699,7 +699,7 @@ public class ExpandingLineChart extends View {
 
     xAlreadyDrawn = xIdx;
 
-    Log.v(TAG, "drawChart end " + xAlreadyDrawn + " " + maxX);
+    //Log.v(TAG, "drawChart end " + xAlreadyDrawn + " " + maxX);
 
 
 //        if (xAlreadyDrawn >= maxX) {
@@ -721,7 +721,7 @@ public class ExpandingLineChart extends View {
     invalidate();
 
     if (xAlreadyDrawn < maxX) {
-      Log.v(TAG, "to next drawChart");
+      //Log.v(TAG, "to next drawChart");
       new Handler(getContext().getMainLooper()).postDelayed(new Runnable() {
         @Override
         public void run() {

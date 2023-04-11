@@ -16,7 +16,7 @@ public class ExpandingLineChartManager extends SimpleViewManager<RnExpandingLine
   ReactApplicationContext reactContext;
 
   public ExpandingLineChartManager(ReactApplicationContext reactContext) {
-    Log.d(TAG, "constructor");
+    //Log.d(TAG, "constructor");
     this.reactContext = reactContext;
   }
 
@@ -27,7 +27,7 @@ public class ExpandingLineChartManager extends SimpleViewManager<RnExpandingLine
 
   @Override
   public RnExpandingLineChart createViewInstance(ThemedReactContext context) {
-    Log.d(TAG, "createViewInstance");
+    //Log.d(TAG, "createViewInstance");
     return new RnExpandingLineChart(context);
   }
 
